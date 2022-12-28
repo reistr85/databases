@@ -1,0 +1,48 @@
+version: '3.7'
+
+services:
+  db-postgres:
+    restart: always
+    image: postgres
+    container_name: db-postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+    volumes:
+      - ./postgres/default/data:/var/lib/postgresql
+      - ./docker/create_databases_db.sh:/docker-entrypoint-initdb.d/create_databases_db.sh
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5434:5432"
+    networks:
+      - net-databases
+
+  db-redis:
+    restart: always
+    image: redis:6.2-alpine
+    container_name: db-redis
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - ./redis/data:/data
+    networks:
+      - net-databases
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "pgadmin@pgadmin.com.br"
+      PGADMIN_DEFAULT_PASSWORD: "pgadmin"
+    ports:
+      - "16543:80"
+    depends_on:
+      - db-postgres
+    networks:
+      - net-databases
+
+networks:
+  net-databases:
+    driver: bridge
